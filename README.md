@@ -1,1 +1,27 @@
-# teb-arf-case-study
+# TEB ARF STT-RAG Integration
+
+Integration service combining Speech-to-Text (STT) and Retrieval-Augmented Generation (RAG) services.
+
+## Project Structure
+
+```
+tebarf-stt-rag-integration/
+├── services/
+│   ├── stt/
+│   ├── rag/
+│   └── gateway/
+├── shared/
+│   ├── models/
+│   └── utils/
+├── tests/
+├── docker/
+├── configs/
+└── scripts/
+```
+
+## Setup
+
+1. Create virtual environment: `python -m venv venv`
+2. Activate: `source venv/bin/activate` (Linux/Mac) or `venv\Scripts\activate` (Windows)
+3. Install dependencies: `pip install -r requirements.txt`
+
