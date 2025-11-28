@@ -1,0 +1,91 @@
+services:
+  stt:
+    build:
+      context: .
+      dockerfile: ${STT_DOCKERFILE:-docker/Dockerfile.stt}
+    container_name: tebarf-stt
+    ports:
+      - "8001:8001"
+    volumes:
+      - ./data:/app/data
+      - whisper-models:/root/.cache/huggingface
+    environment:
+      - WHISPER_DEVICE=${WHISPER_DEVICE:-cuda}
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    networks:
+      - tebarf-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 180s
+
+  rag:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.rag
+    container_name: tebarf-rag
+    ports:
+      - "8002:8002"
+    volumes:
+      - ./data:/app/data
+      - ./configs:/app/configs
+      - embeddings-models:/root/.cache/huggingface
+      - ./.env:/app/.env
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_MODEL=${OPENAI_MODEL:-gpt-4o-mini}
+      - CEPTETEB_URL=${CEPTETEB_URL:-https://www.cepteteb.com.tr}
+    networks:
+      - tebarf-network
+    depends_on:
+      stt:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
+
+  gateway:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.gateway
+    container_name: tebarf-gateway
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data
+      - ./.env:/app/.env
+    environment:
+      - STT_SERVICE_URL=http://stt:8001
+      - RAG_SERVICE_URL=http://rag:8002
+    networks:
+      - tebarf-network
+    depends_on:
+      stt:
+        condition: service_healthy
+      rag:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  whisper-models:
+  embeddings-models:
+
+networks:
+  tebarf-network:
+    driver: bridge
+

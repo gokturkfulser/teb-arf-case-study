@@ -36,7 +36,8 @@ class STTService:
     
     def _get_device(self) -> str:
         """Get device with GPU priority"""
-        if config.device == "cuda":
+        device = config.device.lower()
+        if device in ["cuda", "gpu"]:
             if torch.cuda.is_available():
                 device_name = torch.cuda.get_device_name(0)
                 logger.info(f"CUDA available: {device_name}")
@@ -44,9 +45,12 @@ class STTService:
             else:
                 logger.warning("CUDA requested but not available, falling back to CPU")
                 return "cpu"
+        elif device == "cpu":
+            logger.info("Using device: CPU")
+            return "cpu"
         else:
-            logger.info(f"Using device: {config.device}")
-            return config.device
+            logger.warning(f"Unknown device '{device}', falling back to CPU")
+            return "cpu"
     
     def load_model(self):
         """Load Whisper model"""

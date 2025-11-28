@@ -9,6 +9,7 @@ from fastapi import FastAPI, File, UploadFile, HTTPException, BackgroundTasks
 from pydantic import BaseModel
 import httpx
 import logging
+import os
 from typing import Optional
 from services.rag.data_pipeline import DataPipeline
 
@@ -17,8 +18,8 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI(title="Gateway Service")
 
-STT_SERVICE_URL = "http://localhost:8001"
-RAG_SERVICE_URL = "http://localhost:8002"
+STT_SERVICE_URL = os.getenv("STT_SERVICE_URL", "http://localhost:8001")
+RAG_SERVICE_URL = os.getenv("RAG_SERVICE_URL", "http://localhost:8002")
 
 class TextQueryRequest(BaseModel):
     question: str
