@@ -1,13 +1,13 @@
 # TEB ARF STT-RAG Integration
 
-Integration service combining Speech-to-Text (STT) and Retrieval-Augmented Generation (RAG) services for campaign information queries.
+STT and RAG integration for campaign queries.
 
 ## Features
 
-- **Speech-to-Text**: Transcribe audio using OpenAI Whisper (GPU-accelerated)
-- **RAG System**: Retrieve and generate answers from campaign data using OpenAI
-- **Unified Gateway**: Single API endpoint for voice and text queries
-- **Auto-Indexing**: Automatically scrapes and indexes campaigns on first use
+- Speech-to-Text with Whisper (GPU)
+- RAG system with OpenAI
+- Unified gateway API
+- Auto-indexing on first use
 
 ## Quick Start
 
@@ -79,81 +79,36 @@ See [ENV_SETUP.md](ENV_SETUP.md) for environment variable configuration.
 
 **Optional:**
 - `WHISPER_DEVICE` - `cuda` (default) or `cpu`
-- `OPENAI_MODEL` - Model name (default: `gpt-4o-mini`)
+- `OPENAI_MODEL` - Model name (default: `gpt-4.1-mini`)
 
 ## Testing
 
 See [tests/README.md](tests/README.md) for detailed testing documentation.
 
-### Unit Tests (pytest)
-
-Fast unit tests with mocked dependencies (no services required):
+### Unit Tests
 
 ```bash
-# Run all unit tests
 pytest tests/unit/
-
-# Run specific test file
-pytest tests/unit/test_stt_service.py
-
-# Run with coverage
 pytest tests/unit/ --cov=services --cov-report=html
-
-# Verbose output
-pytest tests/unit/ -v
 ```
-
-**Test Coverage:**
-- STT Service: Device detection, model loading, transcription, caching
-- RAG Service: Indexing, querying, retrieval, generation
-- Gateway: HTTP calls, circuit breaker logic
-- Chunker: Text chunking strategies
 
 ### Integration Tests
 
-Integration tests require services to be running:
-
 ```bash
-# Start all services first
 python scripts/run_all_services.py
-
-# Run integration tests
 pytest tests/integration/ -v
-
-# Or use the PowerShell test script
-.\tests\test_services.ps1
 ```
 
 ### Load Testing
 
-Performance testing with Locust:
-
 ```bash
-# Install Locust
 pip install locust
-
-# Start services first
-python scripts/run_all_services.py
-
-# Run Locust web UI
 locust -f locustfile.py --host=http://localhost:8000
-
-# Or run headless
-locust -f locustfile.py --headless --users 20 --spawn-rate 2 --run-time 2m --host=http://localhost:8000
 ```
 
-See [tests/load/README.md](tests/load/README.md) for detailed load testing guide.
+### Postman
 
-### Postman Collection
-
-Import the Postman collection for easy API testing:
-
-1. Open Postman
-2. Click **Import**
-3. Select `postman/TEB_ARF_STT_RAG_Integration.postman_collection.json`
-4. (Optional) Import environment: `postman/TEB_ARF_Environment.postman_environment.json`
-
-See [postman/README.md](postman/README.md) for detailed instructions.
+Import `postman/TEB_ARF_STT_RAG_Integration.postman_collection.json` into Postman.
 
 ### Manual Testing
 
@@ -182,7 +137,7 @@ tebarf-stt-rag-integration/
 
 ## Documentation
 
-- [Docker Setup](docker/README.md) - Docker installation and usage
-- [Environment Variables](ENV_SETUP.md) - Configuration guide
-- [Docker Troubleshooting](docker/TROUBLESHOOTING.md) - Common issues and solutions
+- [Docker Setup](docker/README.md)
+- [Environment Variables](ENV_SETUP.md)
+- [Docker Troubleshooting](docker/TROUBLESHOOTING.md)
 

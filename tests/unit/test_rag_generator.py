@@ -37,7 +37,7 @@ class TestResponseGenerator:
         mock_client.chat.completions.create.return_value = mock_response
         mock_openai_class.return_value = mock_client
         
-        mocker.patch.dict(os.environ, {"OPENAI_API_KEY": "test-key", "OPENAI_MODEL": "gpt-4o-mini"})
+        mocker.patch.dict(os.environ, {"OPENAI_API_KEY": "test-key", "OPENAI_MODEL": "gpt-4.1-mini"})
         
         generator = ResponseGenerator(use_openai=True)
         generator.openai_client = mock_client

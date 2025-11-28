@@ -41,7 +41,7 @@ services:
       - ./.env:/app/.env
     environment:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - OPENAI_MODEL=${OPENAI_MODEL:-gpt-4o-mini}
+      - OPENAI_MODEL=${OPENAI_MODEL:-gpt-4.1-mini}
       - CEPTETEB_URL=${CEPTETEB_URL:-https://www.cepteteb.com.tr}
     networks:
       - tebarf-network

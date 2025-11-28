@@ -57,6 +57,11 @@ Thumbs.db
 .pytest_cache/
 .coverage
 htmlcov/
+*.html
+
+# Documents
+*.docx
+*.pdf
 
 # Docker
 .dockerignore
