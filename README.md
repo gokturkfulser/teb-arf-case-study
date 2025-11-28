@@ -124,6 +124,26 @@ pytest tests/integration/ -v
 .\tests\test_services.ps1
 ```
 
+### Load Testing
+
+Performance testing with Locust:
+
+```bash
+# Install Locust
+pip install locust
+
+# Start services first
+python scripts/run_all_services.py
+
+# Run Locust web UI
+locust -f locustfile.py --host=http://localhost:8000
+
+# Or run headless
+locust -f locustfile.py --headless --users 20 --spawn-rate 2 --run-time 2m --host=http://localhost:8000
+```
+
+See [tests/load/README.md](tests/load/README.md) for detailed load testing guide.
+
 ### Manual Testing
 
 Test services manually:

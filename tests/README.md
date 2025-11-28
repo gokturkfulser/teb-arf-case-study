@@ -106,6 +106,18 @@ python tests/run_and_test_rag.py
 .\tests\test_services.ps1
 ```
 
+### End-to-End Workflow Tests
+
+End-to-end tests (`tests/integration/test_e2e_workflows.py`) cover complete user journeys:
+
+- **Text Query Journey**: User asks question → Gets answer with sources
+- **Health Check Workflow**: Check all services through gateway
+- **Scrape and Index Workflow**: Scrape → Index → Query
+- **Transcribe Workflow**: Upload audio → Get transcription
+- **Error Handling**: Invalid inputs → Proper error responses
+- **Concurrent Queries**: Multiple simultaneous requests
+- **Service Isolation**: Direct service calls work independently
+
 ### Gateway Integration Tests
 
 Gateway integration tests (`tests/integration/test_gateway_integration.py`) test the full gateway API with running STT and RAG services. These tests:
@@ -113,4 +125,32 @@ Gateway integration tests (`tests/integration/test_gateway_integration.py`) test
 - Test text query flow (Gateway → RAG)
 - Test voice query flow (Gateway → STT → RAG)
 - Verify end-to-end functionality
+
+## Load Testing
+
+Load testing with Locust to measure performance under various load conditions.
+
+### Quick Start
+
+```bash
+# Install Locust (if not already installed)
+pip install locust
+
+# Start services first
+python scripts/run_all_services.py
+
+# Run Locust web UI
+locust -f locustfile.py --host=http://localhost:8000
+
+# Open http://localhost:8089 in browser
+```
+
+### Load Test Scenarios
+
+The load test (`locustfile.py`) includes:
+- **Text Query** (5x weight) - Most common operation
+- **Health Check** (2x weight) - Lightweight monitoring
+- **Transcribe** (1x weight) - Less frequent operation
+
+See [tests/load/README.md](tests/load/README.md) for detailed load testing documentation.
 
