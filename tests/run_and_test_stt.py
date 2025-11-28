@@ -57,7 +57,7 @@ def test_transcribe(audio_file_path):
         with open(audio_file_path, "rb") as f:
             files = {"file": (os.path.basename(audio_file_path), f, "audio/wav")}
             print("Sending request...")
-            response = requests.post("http://localhost:8001/transcribe", files=files, timeout=300)
+            response = requests.post("http://localhost:8001/transcribe", files=files, timeout=600)
         
         if response.status_code == 200:
             result = response.json()

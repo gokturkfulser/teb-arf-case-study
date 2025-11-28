@@ -7,31 +7,89 @@ if str(project_root) not in sys.path:
 
 from fastapi import FastAPI, File, UploadFile, HTTPException
 from services.stt.service import STTService
+from shared.models.stt_models import TranscribeRequest, TranscribeResponse, HealthResponse
+from shared.utils.audio_handler import (
+    validate_audio_format, save_binary_audio, 
+    decode_base64_audio, get_audio_hash
+)
 import os
 import tempfile
+import logging
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 app = FastAPI(title="STT Service")
 stt_service = STTService()
 
-@app.post("/transcribe")
-async def transcribe_audio(file: UploadFile = File(...)):
-    """Transcribe uploaded audio file"""
-    if not file.content_type or not any(fmt in file.content_type for fmt in ["audio", "video"]):
-        raise HTTPException(status_code=400, detail="Invalid file type")
-    
-    with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(file.filename)[1]) as tmp:
-        content = await file.read()
-        tmp.write(content)
-        tmp_path = tmp.name
+@app.post("/transcribe", response_model=TranscribeResponse)
+async def transcribe_audio_file(file: UploadFile = File(...)):
+    """Transcribe audio file from binary upload"""
+    audio_path = None
     
     try:
-        result = stt_service.transcribe(tmp_path)
-        return result
+        if not file.filename or not validate_audio_format(file.filename):
+            raise HTTPException(status_code=400, detail="Invalid audio format")
+        
+        content = await file.read()
+        audio_hash = get_audio_hash(content)
+        suffix = os.path.splitext(file.filename)[1] or ".wav"
+        audio_path = save_binary_audio(content, suffix)
+        
+        result = stt_service.transcribe(audio_path, audio_hash=audio_hash)
+        return TranscribeResponse(**result)
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Transcription error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
     finally:
-        os.unlink(tmp_path)
+        if audio_path and os.path.exists(audio_path):
+            os.unlink(audio_path)
 
-@app.get("/health")
+@app.post("/transcribe/json", response_model=TranscribeResponse)
+async def transcribe_audio_json(request: TranscribeRequest):
+    """Transcribe audio from base64 JSON"""
+    audio_path = None
+    
+    try:
+        if not request.audio_data:
+            raise HTTPException(status_code=400, detail="No audio data provided")
+        
+        content = decode_base64_audio(request.audio_data)
+        audio_hash = get_audio_hash(content)
+        audio_path = save_binary_audio(content, ".wav")
+        
+        result = stt_service.transcribe(audio_path, language=request.language, audio_hash=audio_hash)
+        return TranscribeResponse(**result)
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Transcription error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        if audio_path and os.path.exists(audio_path):
+            os.unlink(audio_path)
+
+@app.get("/health", response_model=HealthResponse)
 async def health():
     """Health check endpoint"""
-    return {"status": "healthy"}
+    return HealthResponse(
+        status="healthy",
+        model_loaded=stt_service.model is not None,
+        device=stt_service.device,
+        queue_size=len(stt_service.request_queue)
+    )
 
+@app.get("/metrics")
+async def metrics():
+    """Get performance metrics"""
+    return stt_service.get_metrics()
+
+@app.post("/cache/clear")
+async def clear_cache():
+    """Clear transcription cache"""
+    stt_service.clear_cache()
+    return {"status": "cache cleared"}
