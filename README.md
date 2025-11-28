@@ -83,12 +83,50 @@ See [ENV_SETUP.md](ENV_SETUP.md) for environment variable configuration.
 
 ## Testing
 
-Run the test script:
-```powershell
+See [tests/README.md](tests/README.md) for detailed testing documentation.
+
+### Unit Tests (pytest)
+
+Fast unit tests with mocked dependencies (no services required):
+
+```bash
+# Run all unit tests
+pytest tests/unit/
+
+# Run specific test file
+pytest tests/unit/test_stt_service.py
+
+# Run with coverage
+pytest tests/unit/ --cov=services --cov-report=html
+
+# Verbose output
+pytest tests/unit/ -v
+```
+
+**Test Coverage:**
+- STT Service: Device detection, model loading, transcription, caching
+- RAG Service: Indexing, querying, retrieval, generation
+- Gateway: HTTP calls, circuit breaker logic
+- Chunker: Text chunking strategies
+
+### Integration Tests
+
+Integration tests require services to be running:
+
+```bash
+# Start all services first
+python scripts/run_all_services.py
+
+# Run integration tests
+pytest tests/integration/ -v
+
+# Or use the PowerShell test script
 .\tests\test_services.ps1
 ```
 
-Or test manually:
+### Manual Testing
+
+Test services manually:
 ```bash
 # Health checks
 curl http://localhost:8000/health
