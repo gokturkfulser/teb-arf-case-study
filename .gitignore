@@ -61,6 +61,9 @@ htmlcov/
 # Docker
 .dockerignore
 
+# Data storage
+data/
+
 #media files
 *.wav
 *.mp3
