@@ -9,8 +9,8 @@ from fastapi import FastAPI, File, UploadFile, HTTPException
 from services.stt.service import STTService
 from shared.models.stt_models import TranscribeRequest, TranscribeResponse, HealthResponse
 from shared.utils.audio_handler import (
-    validate_audio_format, save_binary_audio, 
-    decode_base64_audio, get_audio_hash
+    validate_audio_format, validate_audio_file, validate_magic_number,
+    detect_audio_format, save_binary_audio, decode_base64_audio, get_audio_hash
 )
 import os
 import tempfile
@@ -28,10 +28,17 @@ async def transcribe_audio_file(file: UploadFile = File(...)):
     audio_path = None
     
     try:
-        if not file.filename or not validate_audio_format(file.filename):
-            raise HTTPException(status_code=400, detail="Invalid audio format")
+        if not file.filename:
+            raise HTTPException(status_code=400, detail="No filename provided")
+        
+        if not validate_audio_format(file.filename):
+            raise HTTPException(status_code=400, detail="Invalid audio format extension")
         
         content = await file.read()
+        
+        if not validate_audio_file(content, file.filename):
+            raise HTTPException(status_code=400, detail="Invalid audio file: magic number mismatch")
+        
         audio_hash = get_audio_hash(content)
         suffix = os.path.splitext(file.filename)[1] or ".wav"
         audio_path = save_binary_audio(content, suffix)
@@ -58,8 +65,13 @@ async def transcribe_audio_json(request: TranscribeRequest):
             raise HTTPException(status_code=400, detail="No audio data provided")
         
         content = decode_base64_audio(request.audio_data)
+        
+        detected_format = detect_audio_format(content)
+        if not detected_format:
+            raise HTTPException(status_code=400, detail="Invalid audio file: unsupported format or corrupted file")
+        
         audio_hash = get_audio_hash(content)
-        audio_path = save_binary_audio(content, ".wav")
+        audio_path = save_binary_audio(content, detected_format)
         
         result = stt_service.transcribe(audio_path, language=request.language, audio_hash=audio_hash)
         return TranscribeResponse(**result)
