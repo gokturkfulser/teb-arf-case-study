@@ -107,8 +107,6 @@ Detaylı bilgi için kampanya sayfasını ziyaret edebilirsiniz."""
 
 Eğer bağlamda "{processed_query}" veya benzer yazım şekillerindeki kampanyalar varsa, YANITINA "Evet, {processed_query} kampanyası hakkında bilgim var:" veya "{processed_query} kampanyası ile ilgili size bilgi verebilirim:" diye başla ve bağlamdaki ilgili kampanya bilgilerini detaylıca sun.
 
-Eğer bağlamda "{processed_query}" veya benzer yazım şekillerindeki kampanyalar YOKSA, yanıt verme. Sadece "Üzgünüm, bu kampanya hakkında bilgim bulunmamaktadır." de.
-
 ÖNEMLİ: Yanıtında kullanıcının sorusunu tekrar etme, sadece doğrudan cevap ver."""
                 elif found_variations:
                     synonym_note = f"""
@@ -126,12 +124,11 @@ Verilen bağlam bilgilerine dayanarak kullanıcının sorusunu detaylı, net, ya
 3. Yanıtını Türkçe, profesyonel, anlaşılır ve samimi bir dille yaz
 4. Bağlamdaki bilgileri özetle, düzenle ve kullanıcının sorusuna odaklan
 5. Kullanıcının sorusunu DOĞRUDAN ve EKSİKSİZ yanıtla
-6. Eğer bağlamda soruya yanıt verecek ilgili kampanya YOKSA, sadece "Üzgünüm, bu kampanya hakkında bilgim bulunmamaktadır." de. Başka bir şey söyleme.
-7. Yanıtında gereksiz tekrarlardan kaçın, öz ve net ol
-8. Kampanya faydaları, koşullar ve detayları varsa mutlaka belirt
-9. ÖNEMLİ - TERİM VARYASYONLARI: Kullanıcının sorusundaki terimlerin farklı yazım şekillerini (büyük/küçük harf, tire, alt çizgi, birleşik/ayrı yazım, Türkçe karakter varyasyonları) bağlamda ara. Örneğin: "Otoking", "autoking", "auto-king", "auto_king", "Auto King" aynı şeyi ifade edebilir. Bağlamda benzer terimler varsa bunları eşleştir ve yanıtla.
-10. KRİTİK: Eğer kullanıcı bir kampanya adı söylediyse (örneğin "Otoking") ve bağlamda bu kampanyanın farklı yazım şekli varsa (örneğin "Auto King"), YANITINA "Evet, Auto King kampanyası hakkında bilgim var:" diye başla ve kampanya bilgilerini sun.
-11. ASLA kullanıcının sorusunu veya sorgusunu yanıtında tekrar etme. Sadece doğrudan cevap ver.
+6. Yanıtında gereksiz tekrarlardan kaçın, öz ve net ol
+7. Kampanya faydaları, koşullar ve detayları varsa mutlaka belirt
+8. ÖNEMLİ - TERİM VARYASYONLARI: Kullanıcının sorusundaki terimlerin farklı yazım şekillerini (büyük/küçük harf, tire, alt çizgi, birleşik/ayrı yazım, Türkçe karakter varyasyonları) bağlamda ara. Örneğin: "Otoking", "autoking", "auto-king", "auto_king", "Auto King" aynı şeyi ifade edebilir. Bağlamda benzer terimler varsa bunları eşleştir ve yanıtla.
+9. KRİTİK: Eğer kullanıcı bir kampanya adı söylediyse (örneğin "Otoking") ve bağlamda bu kampanyanın farklı yazım şekli varsa (örneğin "Auto King"), YANITINA "Evet, Auto King kampanyası hakkında bilgim var:" diye başla ve kampanya bilgilerini sun.
+10. ASLA kullanıcının sorusunu veya sorgusunu yanıtında tekrar etme. Sadece doğrudan cevap ver.
 
 YANIT FORMATI:
 - Doğrudan soruya cevap ver, soruyu tekrar etme
