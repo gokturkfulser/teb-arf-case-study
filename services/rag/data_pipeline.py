@@ -32,11 +32,17 @@ class DataPipeline:
         
         validated_campaigns = []
         for campaign in campaigns:
+            if not campaign:
+                logger.warning("Skipping None campaign")
+                continue
+                
             if self.validator.validate(campaign):
                 cleaned = self.validator.clean(campaign)
                 validated_campaigns.append(cleaned)
             else:
-                logger.warning(f"Campaign {campaign.campaign_id} failed validation")
+                campaign_id = campaign.campaign_id if campaign.campaign_id else "unknown"
+                title = campaign.title[:50] if campaign.title else "no title"
+                logger.warning(f"Campaign {campaign_id} ('{title}') failed validation - missing required fields")
         
         if validated_campaigns:
             self.save_campaigns(validated_campaigns)
