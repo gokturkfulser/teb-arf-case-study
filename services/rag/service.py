@@ -25,8 +25,10 @@ class RAGService:
         self.chunker = Chunker()
     
     def index_campaigns(self, campaigns: List):
-        """Index campaigns into vector store"""
+        """Index campaigns into vector store with new timestamped index"""
         logger.info(f"Indexing {len(campaigns)} campaigns")
+        
+        self.vector_store.create_new_index()
         
         all_chunks = []
         for campaign in campaigns:
@@ -44,7 +46,7 @@ class RAGService:
         self.vector_store.add_vectors(np.array(embeddings), all_chunks)
         self.vector_store.save_index()
         
-        logger.info(f"Indexed {len(all_chunks)} chunks")
+        logger.info(f"Indexed {len(all_chunks)} chunks into '{self.vector_store.current_index_name}'")
     
     def query(self, question: str, k: int = 5) -> Dict:
         """Query RAG system"""
