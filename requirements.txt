@@ -10,6 +10,7 @@ faiss-cpu>=1.7.4
 sentence-transformers>=2.2.2
 openai>=1.0.0
 python-dotenv>=1.0.0
+httpx>=0.25.0
 
 # PyTorch installation:
 # For GPU (CUDA 12.1): pip install -r requirements-cuda.txt
