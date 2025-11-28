@@ -144,6 +144,17 @@ locust -f locustfile.py --headless --users 20 --spawn-rate 2 --run-time 2m --hos
 
 See [tests/load/README.md](tests/load/README.md) for detailed load testing guide.
 
+### Postman Collection
+
+Import the Postman collection for easy API testing:
+
+1. Open Postman
+2. Click **Import**
+3. Select `postman/TEB_ARF_STT_RAG_Integration.postman_collection.json`
+4. (Optional) Import environment: `postman/TEB_ARF_Environment.postman_environment.json`
+
+See [postman/README.md](postman/README.md) for detailed instructions.
+
 ### Manual Testing
 
 Test services manually:

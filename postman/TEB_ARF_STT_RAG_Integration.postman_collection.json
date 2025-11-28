@@ -1,0 +1,317 @@
+{
+	"info": {
+		"_postman_id": "teb-arf-stt-rag-integration",
+		"name": "TEB ARF STT-RAG Integration",
+		"description": "API collection for TEB ARF STT-RAG Integration service\n\nServices:\n- Gateway Service (Port 8000)\n- STT Service (Port 8001)\n- RAG Service (Port 8002)",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Gateway Service",
+			"item": [
+				{
+					"name": "Health Check",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{gateway_url}}/health",
+							"host": ["{{gateway_url}}"],
+							"path": ["health"]
+						},
+						"description": "Check health status of Gateway and all downstream services"
+					},
+					"response": []
+				},
+				{
+					"name": "Text Query",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"question\": \"iphone kampanyası nedir\",\n    \"k\": 3\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{gateway_url}}/api/v1/text-query",
+							"host": ["{{gateway_url}}"],
+							"path": ["api", "v1", "text-query"]
+						},
+						"description": "Query campaign data using text input. Returns answer with sources."
+					},
+					"response": []
+				},
+				{
+					"name": "Voice Query",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "file",
+									"type": "file",
+									"src": [],
+									"description": "Audio file (WAV, MP3, M4A, FLAC, OGG)"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{gateway_url}}/api/v1/voice-query",
+							"host": ["{{gateway_url}}"],
+							"path": ["api", "v1", "voice-query"]
+						},
+						"description": "Voice query: Upload audio file → Get transcription and answer"
+					},
+					"response": []
+				},
+				{
+					"name": "Transcribe",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "file",
+									"type": "file",
+									"src": [],
+									"description": "Audio file to transcribe"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{gateway_url}}/api/v1/transcribe",
+							"host": ["{{gateway_url}}"],
+							"path": ["api", "v1", "transcribe"]
+						},
+						"description": "Transcribe audio file to text only (no RAG query)"
+					},
+					"response": []
+				},
+				{
+					"name": "Scrape Campaigns",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{gateway_url}}/api/v1/scrape",
+							"host": ["{{gateway_url}}"],
+							"path": ["api", "v1", "scrape"]
+						},
+						"description": "Scrape campaigns from CEPTETEB website. Indexing happens in background."
+					},
+					"response": []
+				},
+				{
+					"name": "Index Campaigns",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{gateway_url}}/api/v1/index",
+							"host": ["{{gateway_url}}"],
+							"path": ["api", "v1", "index"]
+						},
+						"description": "Scrape and index campaigns. Always scrapes first to get latest data."
+					},
+					"response": []
+				}
+			],
+			"description": "Unified Gateway API endpoints"
+		},
+		{
+			"name": "STT Service",
+			"item": [
+				{
+					"name": "Health Check",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{stt_url}}/health",
+							"host": ["{{stt_url}}"],
+							"path": ["health"]
+						},
+						"description": "Check STT service health status"
+					},
+					"response": []
+				},
+				{
+					"name": "Transcribe File",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "file",
+									"type": "file",
+									"src": [],
+									"description": "Audio file (WAV, MP3, M4A, FLAC, OGG)"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{stt_url}}/transcribe",
+							"host": ["{{stt_url}}"],
+							"path": ["transcribe"]
+						},
+						"description": "Transcribe audio file from binary upload"
+					},
+					"response": []
+				},
+				{
+					"name": "Transcribe Base64",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"audio_base64\": \"base64_encoded_audio_data_here\",\n    \"filename\": \"audio.wav\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{stt_url}}/transcribe/json",
+							"host": ["{{stt_url}}"],
+							"path": ["transcribe", "json"]
+						},
+						"description": "Transcribe audio from base64 encoded JSON"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Metrics",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{stt_url}}/metrics",
+							"host": ["{{stt_url}}"],
+							"path": ["metrics"]
+						},
+						"description": "Get STT service performance metrics"
+					},
+					"response": []
+				},
+				{
+					"name": "Clear Cache",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{stt_url}}/cache/clear",
+							"host": ["{{stt_url}}"],
+							"path": ["cache", "clear"]
+						},
+						"description": "Clear transcription cache"
+					},
+					"response": []
+				}
+			],
+			"description": "Speech-to-Text Service endpoints"
+		},
+		{
+			"name": "RAG Service",
+			"item": [
+				{
+					"name": "Health Check",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{rag_url}}/health",
+							"host": ["{{rag_url}}"],
+							"path": ["health"]
+						},
+						"description": "Check RAG service health and index status"
+					},
+					"response": []
+				},
+				{
+					"name": "Query",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"question\": \"iphone kampanyası hakkında bilgi ver\",\n    \"k\": 5\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{rag_url}}/query",
+							"host": ["{{rag_url}}"],
+							"path": ["query"]
+						},
+						"description": "Query RAG system for campaign information"
+					},
+					"response": []
+				},
+				{
+					"name": "Index Campaigns",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{rag_url}}/index",
+							"host": ["{{rag_url}}"],
+							"path": ["index"]
+						},
+						"description": "Index campaigns from data directory"
+					},
+					"response": []
+				}
+			],
+			"description": "Retrieval-Augmented Generation Service endpoints"
+		}
+	],
+	"variable": [
+		{
+			"key": "gateway_url",
+			"value": "http://localhost:8000",
+			"type": "string"
+		},
+		{
+			"key": "stt_url",
+			"value": "http://localhost:8001",
+			"type": "string"
+		},
+		{
+			"key": "rag_url",
+			"value": "http://localhost:8002",
+			"type": "string"
+		}
+	]
+}
+
