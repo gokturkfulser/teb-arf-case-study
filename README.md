@@ -120,10 +120,37 @@ curl http://localhost:8001/health
 curl http://localhost:8002/health
 ```
 
+## Streamlit Web App
+
+Interactive web interface for testing APIs:
+
+```bash
+# Start services first
+python scripts/run_all_services.py
+
+# Run the app (in a new terminal)
+python scripts/run_streamlit.py
+
+# Or directly
+streamlit run streamlit/app.py
+```
+
+Access at: http://localhost:8501
+
+**Features:**
+- 💬 Text queries with example questions
+- 🎙️ Voice queries with audio upload
+- 📝 Audio transcription
+- 🔍 Campaign scraping and indexing
+- 📈 System health monitoring
+- 🎨 Modern, responsive UI
+
 ## Project Structure
 
 ```
 tebarf-stt-rag-integration/
+├── streamlit/
+│   └── app.py        # Streamlit web application
 ├── services/
 │   ├── stt/          # Speech-to-Text service
 │   ├── rag/          # RAG service
