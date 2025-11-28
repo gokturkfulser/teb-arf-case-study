@@ -61,3 +61,15 @@ htmlcov/
 # Docker
 .dockerignore
 
+#media files
+*.wav
+*.mp3
+*.m4a
+*.flac
+*.ogg
+*.aac
+*.wma
+*.aiff
+*.aif
+*.aifc
+*.aifp
