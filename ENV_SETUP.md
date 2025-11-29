@@ -13,6 +13,12 @@
 
 **`CEPTETEB_URL`** - Scraping URL (default: https://www.cepteteb.com.tr)
 
+**`VECTOR_SIMILARITY_THRESHOLD`** - Maximum L2 distance for vector search filtering (default: `50.0`)
+- Lower values (e.g., `10.0`) = stricter filtering, fewer results
+- Higher values (e.g., `100.0`) = more lenient, more results
+- Set to `100.0` or higher to effectively disable distance filtering
+- Only applies when using `search_strategy: "vector"`
+
 **`STT_SERVICE_URL`** - Local dev only (default: http://localhost:8001)
 
 **`RAG_SERVICE_URL`** - Local dev only (default: http://localhost:8002)

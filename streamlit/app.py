@@ -25,11 +25,11 @@ def check_health() -> Dict:
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
-def text_query(question: str, k: int = 5) -> Optional[Dict]:
+def text_query(question: str, k: int = 5, search_strategy: str = "hybrid") -> Optional[Dict]:
     try:
         response = requests.post(
             f"{GATEWAY_URL}/api/v1/text-query",
-            json={"question": question, "k": k},
+            json={"question": question, "k": k, "search_strategy": search_strategy},
             timeout=60
         )
         if response.status_code != 200:
@@ -46,7 +46,7 @@ def text_query(question: str, k: int = 5) -> Optional[Dict]:
         st.error(f"❌ Error: {str(e)}")
         return None
 
-def voice_query(audio_file) -> Optional[Dict]:
+def voice_query(audio_file, search_strategy: str = "hybrid") -> Optional[Dict]:
     try:
         # Reset file pointer to beginning if it's a file-like object
         if hasattr(audio_file, 'seek'):
@@ -70,7 +70,7 @@ def voice_query(audio_file) -> Optional[Dict]:
         
         files = {"file": (filename, audio_content, content_type)}
         response = requests.post(
-            f"{GATEWAY_URL}/api/v1/voice-query",
+            f"{GATEWAY_URL}/api/v1/voice-query?search_strategy={search_strategy}",
             files=files,
             timeout=120
         )
@@ -147,9 +147,13 @@ def scrape_campaigns() -> Optional[Dict]:
         st.error(f"❌ Error: {str(e)}")
         return None
 
-def index_campaigns() -> Optional[Dict]:
+def index_campaigns(chunking_strategy: str = "default") -> Optional[Dict]:
     try:
-        response = requests.post(f"{GATEWAY_URL}/api/v1/index", timeout=600)
+        response = requests.post(
+            f"{GATEWAY_URL}/api/v1/index",
+            json={"chunking_strategy": chunking_strategy},
+            timeout=600
+        )
         if response.status_code != 200:
             st.error(f"API Error ({response.status_code}): {response.text}")
             return None
@@ -242,7 +246,7 @@ def main():
         st.header("Text Query")
         st.markdown("Ask questions about campaigns using text input.")
         
-        col1, col2 = st.columns([3, 1])
+        col1, col2, col3 = st.columns([3, 1, 1])
         
         with col1:
             question = st.text_input(
@@ -254,11 +258,19 @@ def main():
         with col2:
             k = st.number_input("Results", min_value=1, max_value=10, value=5, step=1)
         
+        with col3:
+            search_strategy = st.selectbox(
+                "Search Strategy",
+                ["hybrid", "vector", "keyword"],
+                index=0,
+                help="hybrid: combines vector and keyword search\nvector: semantic similarity search\nkeyword: text-based keyword matching"
+            )
+        
         if st.button("🔍 Search", type="primary", use_container_width=True):
             if question:
                 start_time = time.time()
                 with st.spinner("Searching..."):
-                    result = text_query(question, k)
+                    result = text_query(question, k, search_strategy)
                     if result:
                         elapsed_time = time.time() - start_time
                         st.success(f"✅ Query completed! (Time: {elapsed_time:.2f}s)")
@@ -303,11 +315,21 @@ def main():
         
         st.info("💡 **Tip:** For best transcription quality, speak clearly in a quiet environment. Uploaded files typically produce better results than browser recordings.")
         
-        option = st.radio(
-            "Choose input method:",
-            ["🎤 Record Audio", "📁 Upload File"],
-            horizontal=True
-        )
+        col1, col2 = st.columns([2, 1])
+        with col1:
+            option = st.radio(
+                "Choose input method:",
+                ["🎤 Record Audio", "📁 Upload File"],
+                horizontal=True
+            )
+        with col2:
+            search_strategy = st.selectbox(
+                "Search Strategy",
+                ["hybrid", "vector", "keyword"],
+                index=0,
+                key="voice_search_strategy",
+                help="hybrid: combines vector and keyword search\nvector: semantic similarity search\nkeyword: text-based keyword matching"
+            )
         
         audio_file = None
         
@@ -338,7 +360,7 @@ def main():
             if st.button("🎤 Process Voice Query", type="primary", use_container_width=True):
                 start_time = time.time()
                 with st.spinner("Processing audio and generating answer..."):
-                    result = voice_query(audio_file)
+                    result = voice_query(audio_file, search_strategy)
                     if result:
                         elapsed_time = time.time() - start_time
                         st.success(f"✅ Voice query completed! (Time: {elapsed_time:.2f}s)")
@@ -450,6 +472,14 @@ def main():
         st.header("Scrape & Index Campaigns")
         st.markdown("Scrape campaigns from CEPTETEB website and index them for RAG queries.")
         
+        st.markdown("### 📊 Indexing Strategy")
+        chunking_strategy = st.selectbox(
+            "Chunking Strategy",
+            ["default", "sliding_window", "semantic"],
+            index=0,
+            help="default: title+description + semantic chunks\nsliding_window: overlapping fixed-size chunks\nsemantic: paragraph-based semantic chunks"
+        )
+        
         col1, col2 = st.columns(2)
         
         with col1:
@@ -463,7 +493,7 @@ def main():
         with col2:
             if st.button("📚 Index Campaigns", use_container_width=True, type="primary"):
                 with st.spinner("Scraping and indexing campaigns (this may take several minutes)..."):
-                    result = index_campaigns()
+                    result = index_campaigns(chunking_strategy)
                     if result:
                         st.success("✅ Indexing completed!")
                         st.json(result)

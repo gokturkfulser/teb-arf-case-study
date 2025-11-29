@@ -7,6 +7,7 @@ if str(project_root) not in sys.path:
 
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
+from typing import Optional
 import logging
 from services.rag.service import RAGService
 import json
@@ -23,6 +24,8 @@ rag_service = RAGService()
 class QueryRequest(BaseModel):
     question: str
     k: int = 5
+    search_strategy: str = "hybrid"
+    similarity_threshold: Optional[float] = None
 
 class QueryResponse(BaseModel):
     answer: str
@@ -39,7 +42,13 @@ async def query(request: QueryRequest):
         if rag_service.vector_store.index.ntotal == 0:
             raise HTTPException(status_code=503, detail="No indexed data available. Please index campaigns first.")
         
-        result = rag_service.query(request.question.strip(), k=request.k)
+        valid_strategies = ["vector", "keyword", "hybrid"]
+        strategy = request.search_strategy.lower() if request.search_strategy else "hybrid"
+        if strategy not in valid_strategies:
+            raise HTTPException(status_code=400, detail=f"Invalid search_strategy. Must be one of: {valid_strategies}")
+        
+        threshold = request.similarity_threshold if request.similarity_threshold is not None else None
+        result = rag_service.query(request.question.strip(), k=request.k, search_strategy=strategy, similarity_threshold=threshold)
         return QueryResponse(**result)
     except HTTPException:
         raise
@@ -47,9 +56,16 @@ async def query(request: QueryRequest):
         logger.error(f"Query error: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
+class IndexRequest(BaseModel):
+    chunking_strategy: str = "default"
+
 @app.post("/index")
-async def index_campaigns():
-    """Index campaigns from data directory"""
+async def index_campaigns(request: IndexRequest = IndexRequest()):
+    """Index campaigns from data directory
+    
+    Args:
+        chunking_strategy: "default", "sliding_window", or "semantic"
+    """
     try:
         data_path = PathLib(config.data_storage_path)
         campaigns = []
@@ -62,7 +78,12 @@ async def index_campaigns():
                 data = json.load(f)
                 campaigns.append(CampaignMetadata(**data))
         
-        rag_service.index_campaigns(campaigns)
+        valid_strategies = ["default", "sliding_window", "semantic"]
+        strategy = request.chunking_strategy.lower() if request.chunking_strategy else "default"
+        if strategy not in valid_strategies:
+            raise HTTPException(status_code=400, detail=f"Invalid chunking_strategy. Must be one of: {valid_strategies}")
+        
+        rag_service.index_campaigns(campaigns, chunking_strategy=strategy)
         
         rag_service.vector_store.load_latest_index()
         
@@ -70,8 +91,11 @@ async def index_campaigns():
             "status": "indexed", 
             "campaigns": len(campaigns),
             "index_name": rag_service.vector_store.current_index_name,
-            "index_size": rag_service.vector_store.index.ntotal
+            "index_size": rag_service.vector_store.index.ntotal,
+            "chunking_strategy": strategy
         }
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Indexing error: {e}")
         raise HTTPException(status_code=500, detail=str(e))

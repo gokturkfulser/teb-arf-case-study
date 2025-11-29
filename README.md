@@ -37,10 +37,13 @@ See [docker/README.md](docker/README.md) for detailed Docker instructions.
 ### Gateway Service (Port 8000)
 
 - `POST /api/v1/voice-query` - Audio input → Text response
+  - Query params: `search_strategy` (vector/keyword/hybrid)
 - `POST /api/v1/text-query` - Text input → Text response
+  - Body: `question`, `k`, `search_strategy`, `similarity_threshold`
 - `POST /api/v1/transcribe` - Audio → Text only
 - `POST /api/v1/scrape` - Scrape campaigns
 - `POST /api/v1/index` - Index campaigns
+  - Body: `chunking_strategy` (default/sliding_window/semantic)
 - `GET /health` - Health check
 
 ### STT Service (Port 8001)
@@ -52,7 +55,9 @@ See [docker/README.md](docker/README.md) for detailed Docker instructions.
 ### RAG Service (Port 8002)
 
 - `POST /query` - Query campaign data
+  - Body: `question`, `k`, `search_strategy`, `similarity_threshold`
 - `POST /index` - Index campaigns
+  - Body: `chunking_strategy` (default/sliding_window/semantic)
 - `GET /health` - Health check
 
 ## Usage Examples
@@ -61,13 +66,55 @@ See [docker/README.md](docker/README.md) for detailed Docker instructions.
 ```bash
 curl -X POST http://localhost:8000/api/v1/text-query \
   -H "Content-Type: application/json" \
-  -d '{"question": "autoking kampanyası nedir", "k": 3}'
+  -d '{"question": "iphone kampanyası vardı o neydi", "k": 3, "search_strategy": "hybrid"}'
 ```
 
 ### Voice Query
 ```bash
-curl -X POST http://localhost:8000/api/v1/voice-query \
+curl -X POST "http://localhost:8000/api/v1/voice-query?search_strategy=hybrid" \
   -F "file=@audio.wav"
+```
+
+### Index Campaigns
+```bash
+curl -X POST http://localhost:8000/api/v1/index \
+  -H "Content-Type: application/json" \
+  -d '{"chunking_strategy": "default"}'
+```
+
+## Indexing Strategies
+
+### Search Strategies (Query Time)
+
+Choose how to search for relevant documents:
+
+- **`hybrid`** (default): Combines vector semantic search and keyword matching for best results
+- **`vector`**: Pure semantic similarity search using embeddings (filters by similarity threshold)
+- **`keyword`**: Text-based keyword matching with Turkish variation detection
+
+**Usage:**
+```json
+{
+  "question": "iphone kampanyası nedir",
+  "k": 5,
+  "search_strategy": "hybrid",
+  "similarity_threshold": 50.0
+}
+```
+
+### Chunking Strategies (Indexing Time)
+
+Choose how to split campaign data into searchable chunks:
+
+- **`default`** (default): Title+description as one chunk + semantic chunks from cleaned_text
+- **`sliding_window`**: Overlapping fixed-size chunks for comprehensive coverage
+- **`semantic`**: Paragraph-based semantic chunks preserving document structure
+
+**Usage:**
+```json
+{
+  "chunking_strategy": "default"
+}
 ```
 
 ## Configuration
@@ -80,6 +127,10 @@ See [ENV_SETUP.md](ENV_SETUP.md) for environment variable configuration.
 **Optional:**
 - `WHISPER_DEVICE` - `cuda` (default) or `cpu`
 - `OPENAI_MODEL` - Model name (default: `gpt-4.1-mini`)
+- `VECTOR_SIMILARITY_THRESHOLD` - Maximum L2 distance for vector search (default: `50.0`)
+  - Lower values = stricter filtering (fewer results)
+  - Higher values = more lenient (more results)
+  - Set to `100.0` or higher to disable filtering
 
 ## Testing
 

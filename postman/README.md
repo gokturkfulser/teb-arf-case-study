@@ -28,12 +28,39 @@
 
 Edit in environment or collection variables.
 
-## Example Request
+## Strategy Parameters
 
+### Search Strategies (for queries)
+- **`hybrid`** (default): Combines vector and keyword search for best results
+- **`vector`**: Semantic similarity search using embeddings
+- **`keyword`**: Text-based keyword matching with variation detection
+
+### Chunking Strategies (for indexing)
+- **`default`** (default): Title+description as one chunk + semantic chunks from cleaned_text
+- **`sliding_window`**: Overlapping fixed-size chunks
+- **`semantic`**: Paragraph-based semantic chunks
+
+## Example Requests
+
+### Text Query with Search Strategy
 ```json
 {
-    "question": "iphone kampanyası nedir",
-    "k": 3
+    "question": "iphone kampanyası vardı o neydi",
+    "k": 3,
+    "search_strategy": "hybrid"
+}
+```
+
+### Voice Query with Search Strategy
+```
+POST /api/v1/voice-query?search_strategy=hybrid
+Form-data: file (audio file)
+```
+
+### Index with Chunking Strategy
+```json
+{
+    "chunking_strategy": "default"
 }
 ```
 

@@ -8,9 +8,10 @@ if str(project_root) not in sys.path:
 import re
 import logging
 import numpy as np
-from typing import List, Dict
+from typing import List, Dict, Optional
 from services.rag.vector_store import VectorStore
 from services.rag.embeddings import EmbeddingService
+from configs.rag_config import config
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -19,18 +20,55 @@ class Retriever:
     def __init__(self, vector_store: VectorStore, embedding_service: EmbeddingService):
         self.vector_store = vector_store
         self.embedding_service = embedding_service
+        self.similarity_threshold = config.vector_similarity_threshold
     
-    def retrieve(self, query: str, k: int = 5) -> List[Dict]:
-        """Multi-stage retrieval: vector search with semantic matching"""
+    def retrieve(self, query: str, k: int = 5, similarity_threshold: Optional[float] = None) -> List[Dict]:
+        """Multi-stage retrieval: vector search with semantic matching
+        
+        Args:
+            query: Query text
+            k: Number of results to return
+            similarity_threshold: Maximum L2 distance threshold (default: from config)
+        """
+        if similarity_threshold is None:
+            similarity_threshold = self.similarity_threshold
+        
         query_processed = self.embedding_service.preprocess_turkish(query)
         query_vector = self.embedding_service.embed_text(query_processed)
         
         query_vector_np = np.array(query_vector).astype('float32')
         results = self.vector_store.search(query_vector_np, k=min(k*15, self.vector_store.index.ntotal))
         
-        reranked = self.rerank(query, results)
+        filtered_results = self._filter_by_threshold(results, similarity_threshold)
         
-        return reranked
+        reranked = self.rerank(query, filtered_results)
+        
+        return reranked[:k]
+    
+    def _filter_by_threshold(self, results: List[Dict], max_distance: float) -> List[Dict]:
+        """Filter results by maximum distance threshold
+        
+        Note: If threshold is very high (>= 100), filtering is effectively disabled
+        to allow reranking to handle quality sorting.
+        """
+        if max_distance >= 100.0:
+            logger.debug(f"Threshold {max_distance} is very high, skipping distance filtering")
+            return results
+        
+        filtered = []
+        for result in results:
+            distance = result.get("score", float('inf'))
+            if distance <= max_distance:
+                filtered.append(result)
+            else:
+                logger.debug(f"Filtered out result with distance {distance:.4f} (threshold: {max_distance})")
+        
+        if len(filtered) == 0 and len(results) > 0:
+            logger.warning(f"All {len(results)} results filtered out by threshold {max_distance}. Returning top results anyway.")
+            return results[:min(10, len(results))]
+        
+        logger.info(f"Filtered {len(results)} results to {len(filtered)} using threshold {max_distance}")
+        return filtered
     
     def rerank(self, query: str, results: List[Dict]) -> List[Dict]:
         """Reranking that prioritizes semantic similarity and variation matches"""
@@ -67,24 +105,59 @@ class Retriever:
                         break
             
             semantic_distance = result.get("score", float('inf'))
-            semantic_similarity = 1.0 / (1.0 + semantic_distance) if semantic_distance < float('inf') else 0.0
+            if semantic_distance < float('inf'):
+                max_distance = max(self.similarity_threshold, 10.0)
+                normalized_distance = min(semantic_distance / max_distance, 1.0) if max_distance > 0 else 1.0
+                semantic_similarity = 1.0 - normalized_distance
+            else:
+                semantic_similarity = 0.0
             
             word_match_score = exact_overlap / max(len(query_words), 1) if query_words else 0.0
             
-            rerank_score = semantic_similarity * 0.4 + word_match_score * 0.1
+            exact_match_in_title = query_lower in title if title else False
+            exact_match_in_id = query_lower in campaign_id if campaign_id else False
+            exact_match_in_text = query_lower in text if text else False
+            
+            key_words_in_title = sum(1 for word in query_words if word in title) if title else 0
+            key_words_in_id = sum(1 for word in query_words if word in campaign_id) if campaign_id else 0
+            key_words_in_text = sum(1 for word in query_words if word in text) if text else 0
+            
+            key_word_ratio_title = key_words_in_title / max(len(query_words), 1) if query_words else 0.0
+            key_word_ratio_id = key_words_in_id / max(len(query_words), 1) if query_words else 0.0
+            
+            rerank_score = semantic_similarity * 0.4 + word_match_score * 0.3
             
             chunk_type = result.get("type", "")
             if chunk_type == "title_description":
+                rerank_score += 0.1
+            
+            if exact_match_in_id:
+                rerank_score = min(max(rerank_score, 0.9), 0.98)
+            elif exact_match_in_title:
+                rerank_score = min(max(rerank_score, 0.8), 0.92)
+            elif exact_match_in_text:
+                rerank_score = min(max(rerank_score, 0.7), 0.85)
+            elif key_word_ratio_id >= 0.7:
+                rerank_score = min(max(rerank_score, 0.75), 0.88)
+            elif key_word_ratio_title >= 0.7:
+                rerank_score = min(max(rerank_score, 0.65), 0.82)
+            elif key_word_ratio_id >= 0.5:
+                rerank_score = min(max(rerank_score, 0.6), 0.78)
+            elif key_word_ratio_title >= 0.5:
+                rerank_score = min(max(rerank_score, 0.55), 0.72)
+            elif key_words_in_title > 0:
                 rerank_score += 0.2
+            elif key_words_in_id > 0:
+                rerank_score += 0.25
             
             if variation_match:
-                rerank_score += 0.3
+                rerank_score += 0.1
             if variation_in_title:
-                rerank_score += 0.6
+                rerank_score += 0.15
             if variation_in_id:
-                rerank_score += 0.8
+                rerank_score += 0.2
             
-            result["rerank_score"] = rerank_score
+            result["rerank_score"] = min(rerank_score, 0.99)
         
         results.sort(key=lambda x: x.get("rerank_score", 0), reverse=True)
         return results
@@ -103,6 +176,9 @@ class Retriever:
         
         combined = self._merge_results(vector_results, keyword_results)
         
+        query_lower = query.lower()
+        query_words = set(query_lower.split())
+        
         for result in combined:
             title = result.get("title", "").lower() if result.get("title") else ""
             text = result.get("text", "").lower()
@@ -120,16 +196,42 @@ class Retriever:
                         variation_in_id = True
                         break
             
+            key_words_in_title = sum(1 for word in query_words if word in title) if title else 0
+            key_words_in_id = sum(1 for word in query_words if word in campaign_id) if campaign_id else 0
+            key_word_ratio_title = key_words_in_title / max(len(query_words), 1) if query_words else 0.0
+            key_word_ratio_id = key_words_in_id / max(len(query_words), 1) if query_words else 0.0
+            
+            exact_match_in_title = query_lower in title if title else False
+            exact_match_in_id = query_lower in campaign_id if campaign_id else False
+            
             current_score = result.get("rerank_score", result.get("keyword_score", result.get("score", 0)))
             
             if chunk_type == "title_description":
-                current_score += 0.3
+                current_score += 0.2
+            
+            if exact_match_in_id:
+                current_score = min(max(current_score, 0.9), 0.98)
+            elif exact_match_in_title:
+                current_score = min(max(current_score, 0.8), 0.92)
+            elif key_word_ratio_id >= 0.7:
+                current_score = min(max(current_score, 0.75), 0.88)
+            elif key_word_ratio_title >= 0.7:
+                current_score = min(max(current_score, 0.65), 0.82)
+            elif key_word_ratio_id >= 0.5:
+                current_score = min(max(current_score, 0.6), 0.78)
+            elif key_word_ratio_title >= 0.5:
+                current_score = min(max(current_score, 0.55), 0.72)
+            elif key_words_in_title > 0:
+                current_score += 0.2
+            elif key_words_in_id > 0:
+                current_score += 0.25
             
             if variation_in_title:
-                current_score += 0.6
+                current_score += 0.2
             if variation_in_id:
-                current_score += 0.9
-            result["rerank_score"] = current_score
+                current_score += 0.3
+            
+            result["rerank_score"] = min(current_score, 0.99)
         
         combined_sorted = sorted(combined, key=lambda x: x.get("rerank_score", x.get("keyword_score", x.get("score", float('inf')))), reverse=True)
         

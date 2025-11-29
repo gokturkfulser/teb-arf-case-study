@@ -35,7 +35,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"question\": \"iphone kampanyası nedir\",\n    \"k\": 3\n}",
+							"raw": "{\n    \"question\": \"iphone kampanyası vardı o neydi\",\n    \"k\": 3,\n    \"search_strategy\": \"hybrid\"\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -47,7 +47,7 @@
 							"host": ["{{gateway_url}}"],
 							"path": ["api", "v1", "text-query"]
 						},
-						"description": "Query campaign data using text input. Returns answer with sources."
+						"description": "Query campaign data using text input. Returns answer with sources.\n\n**Parameters:**\n- `question` (required): Query question\n- `k` (optional, default: 5): Number of results to return\n- `search_strategy` (optional, default: \"hybrid\"): Search strategy - \"vector\", \"keyword\", or \"hybrid\""
 					},
 					"response": []
 				},
@@ -68,11 +68,18 @@
 							]
 						},
 						"url": {
-							"raw": "{{gateway_url}}/api/v1/voice-query",
+							"raw": "{{gateway_url}}/api/v1/voice-query?search_strategy=hybrid",
 							"host": ["{{gateway_url}}"],
-							"path": ["api", "v1", "voice-query"]
+							"path": ["api", "v1", "voice-query"],
+							"query": [
+								{
+									"key": "search_strategy",
+									"value": "hybrid",
+									"description": "Search strategy: \"vector\", \"keyword\", or \"hybrid\" (default: \"hybrid\")"
+								}
+							]
 						},
-						"description": "Voice query: Upload audio file → Get transcription and answer"
+						"description": "Voice query: Upload audio file → Get transcription and answer\n\n**Query Parameters:**\n- `search_strategy` (optional, default: \"hybrid\"): Search strategy - \"vector\", \"keyword\", or \"hybrid\""
 					},
 					"response": []
 				},
@@ -119,13 +126,27 @@
 					"name": "Index Campaigns",
 					"request": {
 						"method": "POST",
-						"header": [],
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"chunking_strategy\": \"default\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
 						"url": {
 							"raw": "{{gateway_url}}/api/v1/index",
 							"host": ["{{gateway_url}}"],
 							"path": ["api", "v1", "index"]
 						},
-						"description": "Scrape and index campaigns. Always scrapes first to get latest data."
+						"description": "Scrape and index campaigns. Always scrapes first to get latest data.\n\n**Parameters:**\n- `chunking_strategy` (optional, default: \"default\"): Chunking strategy - \"default\", \"sliding_window\", or \"semantic\""
 					},
 					"response": []
 				}
@@ -262,7 +283,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"question\": \"iphone kampanyası hakkında bilgi ver\",\n    \"k\": 5\n}",
+							"raw": "{\n    \"question\": \"iphone kampanyası vardı o neydi\",\n    \"k\": 5,\n    \"search_strategy\": \"hybrid\"\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -274,7 +295,7 @@
 							"host": ["{{rag_url}}"],
 							"path": ["query"]
 						},
-						"description": "Query RAG system for campaign information"
+						"description": "Query RAG system for campaign information\n\n**Parameters:**\n- `question` (required): Query question\n- `k` (optional, default: 5): Number of results to return\n- `search_strategy` (optional, default: \"hybrid\"): Search strategy - \"vector\", \"keyword\", or \"hybrid\""
 					},
 					"response": []
 				},
@@ -282,13 +303,27 @@
 					"name": "Index Campaigns",
 					"request": {
 						"method": "POST",
-						"header": [],
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"chunking_strategy\": \"default\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
 						"url": {
 							"raw": "{{rag_url}}/index",
 							"host": ["{{rag_url}}"],
 							"path": ["index"]
 						},
-						"description": "Index campaigns from data directory"
+						"description": "Index campaigns from data directory\n\n**Parameters:**\n- `chunking_strategy` (optional, default: \"default\"): Chunking strategy - \"default\", \"sliding_window\", or \"semantic\""
 					},
 					"response": []
 				}
